@@ -42,10 +42,16 @@ class Calculator(tk.Tk):
         self.bind_keys()
 
     def create_display_labels(self):
-        total_label = tk.Label(self.display_frame, text=self.total_expression, anchor=tk.E, bg="#2c3e50", fg="#ecf0f1", padx=24, font=("Arial", 18))
+        total_label = tk.Label(
+            self.display_frame, text=self.total_expression, anchor=tk.E,
+            bg="#2c3e50", fg="#ecf0f1", padx=24, font=("Arial", 18)
+        )
         total_label.grid(row=0, column=0, columnspan=4, sticky="nsew")
 
-        label = tk.Label(self.display_frame, text=self.current_expression, anchor=tk.E, bg="#2c3e50", fg="#ecf0f1", padx=24, font=("Arial", 32))
+        label = tk.Label(
+            self.display_frame, text=self.current_expression, anchor=tk.E,
+            bg="#2c3e50", fg="#ecf0f1", padx=24, font=("Arial", 32)
+        )
         label.grid(row=1, column=0, columnspan=4, sticky="nsew")
 
         return total_label, label
@@ -88,151 +94,105 @@ class Calculator(tk.Tk):
                 button_obj.grid(row=r, column=c, sticky="nsew", padx=1, pady=1)
 
     def bind_keys(self):
+        key_bindings = {
+            '<Return>': self.evaluate,
+            '<BackSpace>': self.clear_entry,
+            '<c>': self.clear,
+            '<percent>': lambda event: self.apply_function(lambda x: x / 100),
+            '<q>': self.quit,
+            '<exclam>': lambda event: self.apply_function(math.factorial),
+            '<1>': lambda event: self.apply_function(lambda x: 1 / x),
+            '<d>': lambda event: self.apply_function(math.degrees),
+            '<r>': lambda event: self.apply_function(math.radians)
+        }
+        
+        for key, handler in key_bindings.items():
+            self.bind(key, handler)
+        
         self.bind('<KeyPress>', self.on_key_press)
-        self.bind('<Return>', lambda event: self.evaluate())
-        self.bind('<BackSpace>', lambda event: self.clear_entry())
-        self.bind('<c>', lambda event: self.clear())
-        self.bind('<percent>', lambda event: self.apply_function(lambda x: x / 100))
-        self.bind('<q>', lambda event: self.quit())
-        self.bind('<exclam>', lambda event: self.apply_function(math.factorial))  
-        self.bind('<1>', lambda event: self.apply_function(lambda x: 1 / x))  
-        self.bind('<d>', lambda event: self.apply_function(math.degrees)) 
-        self.bind('<r>', lambda event: self.apply_function(math.radians))  
 
     def on_key_press(self, event):
         key = event.char
-        if key in '0123456789.':
-            self.append_value(key)
-        elif key in '+-*/':
-            self.append_operator(key)
-        elif key == '\r':
-            self.evaluate()
-        elif key == '\x08':
-            self.clear_entry()
-        elif key == 'c' or key == 'C':
-            self.clear()
-        elif key == '%':
-            self.apply_function(lambda x: x / 100)
-        elif key == 'p':
-            self.append_value(math.pi)
-        elif key == '^':
-            if event.keysym == '2':
-                self.apply_function(lambda x: x ** 2)
-            elif event.keysym == '3':
-                self.apply_function(lambda x: x ** 3)
-        elif key == 'r':
-            self.apply_function(math.sqrt)
-        elif key == 'l':
-            self.apply_function(math.log10)
-        elif key == 'e':
-            self.apply_function(math.exp)
-        elif key == 's':
-            self.apply_function(math.sin)
-        elif key == 'c':
-            self.apply_function(math.cos)
-        elif key == 't':
-            self.apply_function(math.tan)
-        elif key == 'm':
-            self.memory += self.get_value()
-        elif key == 'M':
-            self.current_expression = str(self.memory)
-        elif key == 'M' and event.keysym == 'minus':
-            self.memory -= self.get_value()
-        elif key == 'h':
-            self.show_history()
-        elif key == 'q':
-            self.quit()
-        elif key == '!':
-            self.apply_function(math.factorial)
-        elif key == '1':
-            self.apply_function(lambda x: 1 / x)
-        elif key == 'd':
-            self.apply_function(math.degrees)
-        elif key == 'r':
-            self.apply_function(math.radians)
+        key_actions = {
+            '0123456789.': self.append_value,
+            '+-*/': self.append_operator,
+            '\r': self.evaluate,
+            '\x08': self.clear_entry,
+            'cC': self.clear,
+            '%': lambda: self.apply_function(lambda x: x / 100),
+            'p': lambda: self.append_value(math.pi),
+            '^': lambda e: self.apply_function(lambda x: x ** 2 if e.keysym == '2' else x ** 3),
+            'r': lambda: self.apply_function(math.sqrt),
+            'l': lambda: self.apply_function(math.log10),
+            'e': lambda: self.apply_function(math.exp),
+            's': lambda: self.apply_function(math.sin),
+            'c': lambda: self.apply_function(math.cos),
+            't': lambda: self.apply_function(math.tan),
+            'm': lambda: self.memory_add(self.get_value()),
+            'M': lambda: self.memory_set(),
+            'h': self.show_history,
+            'q': self.quit,
+            '!': lambda: self.apply_function(math.factorial),
+            '1': lambda: self.apply_function(lambda x: 1 / x),
+            'd': lambda: self.apply_function(math.degrees),
+            'r': lambda: self.apply_function(math.radians)
+        }
 
-        self.update_display()
+        for key_group, action in key_actions.items():
+            if key in key_group:
+                action(event)
+                self.update_display()
+                break
 
     def on_button_click(self, button):
-        if button == 'C':
-            self.clear()
-        elif button == 'CE':
-            self.clear_entry()
-        elif button == '=':
-            self.evaluate()
-        elif button in ['+', '-', '*', '/']:
-            self.append_operator(button)
-        elif button == 'π':
-            self.append_value(math.pi)
-        elif button == '^2':
-            self.apply_function(lambda x: x ** 2)
-        elif button == '^3':
-            self.apply_function(lambda x: x ** 3)
-        elif button == '√':
-            self.apply_function(math.sqrt)
-        elif button == 'log':
-            self.apply_function(math.log10)
-        elif button == 'exp':
-            self.apply_function(math.exp)
-        elif button == 'sin':
-            self.apply_function(math.sin)
-        elif button == 'cos':
-            self.apply_function(math.cos)
-        elif button == 'tan':
-            self.apply_function(math.tan)
-        elif button == '%':
-            self.apply_function(lambda x: x / 100)
-        elif button == 'M+':
-            self.memory += self.get_value()
-        elif button == 'M-':
-            self.memory -= self.get_value()
-        elif button == 'MR':
-            self.current_expression = str(self.memory)
-        elif button == 'MC':
-            self.memory = 0
-        elif button == 'History':
-            self.show_history()
-        elif button == 'Quit':
-            self.quit()
-        elif button == '!':
-            self.apply_function(math.factorial)
-        elif button == '1/x':
-            self.apply_function(lambda x: 1 / x)
-        elif button == 'deg':
-            self.apply_function(math.degrees)
-        elif button == 'rad':
-            self.apply_function(math.radians)
-        elif button == 'sinh':
-            self.apply_function(math.sinh)
-        elif button == 'cosh':
-            self.apply_function(math.cosh)
-        elif button == 'tanh':
-            self.apply_function(math.tanh)
-        elif button == 'log2':
-            self.apply_function(math.log2)
-        elif button == 'bin':
-            self.current_expression = bin(int(self.get_value()))
-        elif button == 'oct':
-            self.current_expression = oct(int(self.get_value()))
-        elif button == 'hex':
-            self.current_expression = hex(int(self.get_value()))
-        elif button == 'dec':
-            self.current_expression = str(int(self.current_expression, 0))
-        elif button == 'Theme':
-            self.change_theme()
-        elif button == 'Save':
-            self.save_history()
-        elif button == 'Load':
-            self.load_history()
-        elif button == 'Clear Hist':
-            self.clear_history()
+        button_actions = {
+            'C': self.clear,
+            'CE': self.clear_entry,
+            '=': self.evaluate,
+            '+-*/': self.append_operator,
+            'π': lambda: self.append_value(math.pi),
+            '^2': lambda: self.apply_function(lambda x: x ** 2),
+            '^3': lambda: self.apply_function(lambda x: x ** 3),
+            '√': lambda: self.apply_function(math.sqrt),
+            'log': lambda: self.apply_function(math.log10),
+            'exp': lambda: self.apply_function(math.exp),
+            'sin': lambda: self.apply_function(math.sin),
+            'cos': lambda: self.apply_function(math.cos),
+            'tan': lambda: self.apply_function(math.tan),
+            '%': lambda: self.apply_function(lambda x: x / 100),
+            'M+': lambda: self.memory_add(self.get_value()),
+            'M-': lambda: self.memory_subtract(self.get_value()),
+            'MR': lambda: self.current_expression = str(self.memory),
+            'MC': lambda: self.memory_clear(),
+            'History': self.show_history,
+            'Quit': self.quit,
+            '!': lambda: self.apply_function(math.factorial),
+            '1/x': lambda: self.apply_function(lambda x: 1 / x),
+            'deg': lambda: self.apply_function(math.degrees),
+            'rad': lambda: self.apply_function(math.radians),
+            'sinh': lambda: self.apply_function(math.sinh),
+            'cosh': lambda: self.apply_function(math.cosh),
+            'tanh': lambda: self.apply_function(math.tanh),
+            'log2': lambda: self.apply_function(math.log2),
+            'bin': lambda: self.current_expression = bin(int(self.get_value())),
+            'oct': lambda: self.current_expression = oct(int(self.get_value())),
+            'hex': lambda: self.current_expression = hex(int(self.get_value())),
+            'dec': lambda: self.current_expression = str(int(self.current_expression, 0)),
+            'Theme': self.change_theme,
+            'Save': self.save_history,
+            'Load': self.load_history,
+            'Clear Hist': self.clear_history
+        }
+
+        if button in button_actions:
+            button_actions[button]()
         else:
             self.append_value(button)
 
         self.update_display()
 
     def apply_function(self, func):
-        if self.current_expression != "":
+        if self.current_expression:
             try:
                 value = float(self.current_expression)
                 self.current_expression = str(func(value))
@@ -244,10 +204,9 @@ class Calculator(tk.Tk):
         self.current_expression += str(value)
 
     def append_operator(self, operator):
-        if self.current_expression == "":
-            return
-        self.total_expression += self.current_expression + operator
-        self.current_expression = ""
+        if self.current_expression:
+            self.total_expression += self.current_expression + operator
+            self.current_expression = ""
 
     def clear(self):
         self.current_expression = ""
@@ -263,7 +222,7 @@ class Calculator(tk.Tk):
             self.current_expression = str(eval(self.total_expression))
             self.total_expression = ""
             self.add_to_history(self.current_expression)
-        except Exception as e:
+        except Exception:
             self.current_expression = "Error"
             self.add_to_history("Error")
 
@@ -310,13 +269,12 @@ class Calculator(tk.Tk):
         with open("history.txt", "w") as file:
             for entry in self.history:
                 file.write(f"{entry}\n")
-        messagebox.showinfo("Save History", "History save successfully!")
+        messagebox.showinfo("Save History", "History saved successfully!")
 
     def load_history(self):
         try:
             with open("history.txt", "r") as file:
-                self.history = file.readlines()
-            self.history = [entry.strip() for entry in self.history]
+                self.history = [line.strip() for line in file]
             messagebox.showinfo("Load History", "History loaded successfully!")
         except FileNotFoundError:
             messagebox.showerror("Load History", "No history file found.")
@@ -325,6 +283,18 @@ class Calculator(tk.Tk):
         self.history = []
         messagebox.showinfo("Clear History", "History cleared!")
 
+    def memory_add(self, value):
+        self.memory += value
+
+    def memory_subtract(self, value):
+        self.memory -= value
+
+    def memory_set(self):
+        self.current_expression = str(self.memory)
+
+    def memory_clear(self):
+        self.memory = 0
+
 if __name__ == "__main__":
-    calculator = Calculator()
-    calculator.mainloop()
+    app = Calculator()
+    app.mainloop()
